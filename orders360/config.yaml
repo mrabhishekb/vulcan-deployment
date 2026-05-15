@@ -41,7 +41,7 @@
 # ==============================================================================
 
 # Basic Information
-name: orders-analytics
+name: orders360mrab
 tenant: sales
 # display_name is not a valid top-level key for this Vulcan CLI — keep the title in description / metadata below
 description: >-
