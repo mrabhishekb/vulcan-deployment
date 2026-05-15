@@ -1,0 +1,49 @@
+# Portable copy — no bind mount to monorepo transpiler/semantic/cube.py (uses image defaults).
+
+x-images:
+  vulcan-transpiler-api: &transpiler_api_image "tmdcio/vulcan-transpiler-api:${VERSION:-0.0.0-exp.02}"
+  vulcan-transpiler-semantic: &transpiler_semantic_image "tmdcio/vulcan-transpiler-semantic:${VERSION:-0.0.0-exp.02}"
+
+volumes:
+  vulcan-transpiler-models:
+    driver: local
+
+networks:
+  vulcan:
+    external: true
+
+services:
+  vulcan-transpiler-api:
+    image: *transpiler_api_image
+    ports:
+      - "8100:8100"
+    environment:
+      - MODELS_DIR=/models
+      - CUBE_BASE_URL=http://vulcan-transpiler-semantic:4000
+      - CUBE_API_PATH=/transpiler
+      - HEIMDALL_URL=${HEIMDALL_URL:-https://neptune-021726.dataos.cloud/heimdall}
+      - HEIMDALL_ENABLED=${HEIMDALL_ENABLED:-false}
+    volumes:
+      - vulcan-transpiler-models:/models
+    depends_on:
+      vulcan-transpiler-semantic:
+        condition: service_started
+    restart: unless-stopped
+    networks:
+      - vulcan
+
+  vulcan-transpiler-semantic:
+    image: *transpiler_semantic_image
+    ports:
+      # Host port defaults to 14000 so 4000 can stay busy (Cube/others). Inside the stack it is still :4000.
+      - "${SEMANTIC_HOST_PORT:-14000}:4000"
+      # Default host port 25432 — 15432 is often taken (e.g. Yugabyte). Container still listens on 15432.
+      - "${SEMANTIC_PG_HOST_PORT:-25432}:15432"
+    environment:
+      - CUBEJS_LOG_LEVEL=warn
+      - MODELS_DIR=/models
+    volumes:
+      - vulcan-transpiler-models:/models
+    restart: unless-stopped
+    networks:
+      - vulcan

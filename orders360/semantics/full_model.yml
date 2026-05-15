@@ -1,0 +1,16 @@
+models:
+  vulcan_example.full_model:
+    alias: full_model
+    dimensions:
+      includes:
+        - item_id
+    
+    measures:
+      total_orders:
+        type: sum
+        expression: "{full_model.num_orders}"
+
+      avg_orders_per_item:
+        type: avg
+        expression: "{full_model.num_orders}"
+  

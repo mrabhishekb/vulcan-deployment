@@ -1,0 +1,33 @@
+# Portable copy — TLS under docker/ssl (make certs). Routes to vulcan-mysql in docker-compose.vulcan.yml
+
+x-images:
+  proxy: &proxy_image "tmdcio/vulcan-mysql:${MYSQL_VERSION:-0.0.0-exp.04}"
+
+networks:
+  vulcan:
+    external: true
+
+services:
+  mysql-proxy:
+    image: *proxy_image
+    ports:
+      - "3306:3306"
+      - "8080:8080"
+    environment:
+      MODE: "proxy"
+      PROXY_ROUTING_MODE: "dynamic"
+      LOG_LEVEL: ${MYSQL_PROXY_LOG_LEVEL:-debug}
+      MYSQL_SSL_CERT_FILE: "/ssl/server.crt"
+      MYSQL_SSL_KEY_FILE: "/ssl/server.key"
+      PROXY_ROUTE_vulcan: "vulcan-mysql:vulcan-mysql:3306:vulcan"
+    volumes:
+      - ./ssl:/ssl:ro
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/livez"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - vulcan

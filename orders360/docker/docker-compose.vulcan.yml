@@ -1,0 +1,104 @@
+# Vulcan API + GraphQL + MySQL wire (Snowflake image). Prereq: vulcan network, statestore, minio, transpiler.
+# From project root of this bundle: cp env.example .env && make up
+#
+# Snowflake creds + MinIO/statestore on Docker network (transpiler/graphql URLs come from config.yaml, same as b2b_saas).
+x-vulcan-env: &vulcan_env
+  PROJECT_PATH: ${PROJECT_PATH:-/workspace}
+  MINIO_ENDPOINT: http://minio:9000
+  STATESTORE_HOST: statestore
+  STATESTORE_PORT: "5432"
+  SNOWFLAKE_ACCOUNT: ${SNOWFLAKE_ACCOUNT}
+  SNOWFLAKE_USER: ${SNOWFLAKE_USER}
+  SNOWFLAKE_PASSWORD: ${SNOWFLAKE_PASSWORD}
+  SNOWFLAKE_WAREHOUSE: ${SNOWFLAKE_WAREHOUSE}
+  SNOWFLAKE_DATABASE: ${SNOWFLAKE_DATABASE}
+  SNOWFLAKE_ROLE: ${SNOWFLAKE_ROLE:-}
+  SNOWFLAKE_AUTHENTICATOR: ${SNOWFLAKE_AUTHENTICATOR:-snowflake}
+  STATE_SCHEMA: ${STATE_SCHEMA:-vulcan_try}
+
+# Images: Snowflake CLI/API image vs GraphQL (separate tags — match b2b_saas/docker/docker-compose.vulcan.yml).
+# Override: VERSION=… for vulcan-snowflake, GRAPHQL_VERSION=… for vulcan-graphql (default 0.228.1.11).
+x-images:
+  vulcan: &vulcan_image "tmdcio/vulcan-snowflake:${VERSION:-0.228.1.12-rc2}"
+  vulcan-graphql: &vulcan_graphql_image "tmdcio/vulcan-graphql:${GRAPHQL_VERSION:-0.228.1.11}"
+  vulcan-mysql: &vulcan_mysql_image "tmdcio/vulcan-mysql:${MYSQL_VERSION:-0.0.0-exp.04}"
+
+networks:
+  vulcan:
+    external: true
+
+services:
+  vulcan-api:
+    image: *vulcan_image
+    # Match host uid/gid (see .env DOCKER_UID / DOCKER_GID) so /workspace/.logs is writable on the bind mount
+    user: "${DOCKER_UID:-1000}:${DOCKER_GID:-1000}"
+    working_dir: /workspace
+    command: ["vulcan", "--log-to-stdout", "api", "--host", "0.0.0.0", "--port", "8000"]
+    environment:
+      <<: *vulcan_env
+    ports:
+      - "8000:8000"
+    volumes:
+      - ../:/workspace
+    restart: unless-stopped
+    networks:
+      - vulcan
+
+  vulcan-graphql:
+    image: *vulcan_graphql_image
+    environment:
+      VULCAN_API_URL: http://vulcan-api:8000
+      VULCAN_TENANT_ID: ${VULCAN_TENANT_ID:-default}
+      VULCAN_DB_TYPE: snowflake
+    depends_on:
+      - vulcan-api
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    networks:
+      - vulcan
+
+  vulcan-mysql:
+    image: *vulcan_mysql_image
+    ports:
+      - "3307:3306"
+      - "8081:8080"
+    environment:
+      LOG_LEVEL: ${MYSQL_LOG_LEVEL:-debug}
+      MODE: "server"
+      MYSQL_HOST: "0.0.0.0"
+      MYSQL_PORT: "3306"
+      MYSQL_DB_NAME: "vulcan"
+      MYSQL_MAX_CONNECTIONS: "1000"
+      MYSQL_HANDSHAKE_TIMEOUT: "10"
+      MYSQL_CONN_READ_TIMEOUT: "3600"
+      MYSQL_CONN_WRITE_TIMEOUT: "300"
+      SLOW_QUERY_THRESHOLD: "10"
+      MYSQL_SSL_CERT_FILE: "/ssl/server.crt"
+      MYSQL_SSL_KEY_FILE: "/ssl/server.key"
+      HEIMDALL_URL: ${HEIMDALL_URL:-https://neptune-021726.dataos.cloud/heimdall}
+      HEIMDALL_AUTH_PATH: /api/v1/authorize
+      HEIMDALL_TIMEOUT: "10"
+      DATAOS_RUN_AS_USER: ${DATAOS_RUN_AS_USER:-localdev}
+      DATAOS_RUN_AS_APIKEY: ${DATAOS_RUN_AS_APIKEY:-}
+      HTTP_HOST: "0.0.0.0"
+      HTTP_PORT: "8080"
+      VULCAN_API_URL: http://vulcan-api:8000
+      VULCAN_ENVIRONMENT: ${VULCAN_ENVIRONMENT:-prod}
+      VULCAN_QUERY_TTL_MINUTES: ${VULCAN_QUERY_TTL_MINUTES:-60}
+      VULCAN_API_POLL_INITIAL_MS: "1000"
+      VULCAN_API_POLL_MAX_MS: "5000"
+      VULCAN_API_QUERY_TIMEOUT: "300"
+    volumes:
+      - ./ssl:/ssl:ro
+    depends_on:
+      - vulcan-api
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/livez"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    restart: unless-stopped
+    networks:
+      - vulcan
