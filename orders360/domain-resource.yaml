@@ -8,11 +8,11 @@ spec:
   compute: ct-sandbox
   engine: postgres
   repo:
-    url: https://github.com/mrabhishekb/orders_360
+    url: https://github.com/mrabhishekb/vulcan-deployment
     syncFlags:
       - "--ref=main"
       - "--submodules=off"
-    baseDir: 
+    baseDir: orders360
     secret: ct-sandbox:git-sync-mrab
   depots:
     - dataos://postgresdepot?purpose=rw
