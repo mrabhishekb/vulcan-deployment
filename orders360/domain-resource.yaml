@@ -36,11 +36,15 @@ spec:
       command:
         - vulcan
       arguments:
+        - -p
+        - orders360
         - migrate
     plan:
       command:
         - vulcan
       arguments:
+        - -p
+        - orders360
         - --log-to-stdout
         - plan
         - --auto-apply
@@ -48,11 +52,24 @@ spec:
       command:
         - vulcan
       arguments:
+        - -p
+        - orders360
         - --log-to-stdout
         - run
   api:
     replicas: 1
     logLevel: INFO
+    command:
+      - vulcan
+    arguments:
+      - -p
+      - orders360
+      - --log-to-stdout
+      - api
+      - --host
+      - "0.0.0.0"
+      - --port
+      - "8000"
     resource:
       request:
         cpu: "200m"
