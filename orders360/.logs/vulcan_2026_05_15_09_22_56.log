@@ -1,1 +1,0 @@
-2026-05-15 09:22:56,270 - MainThread - vulcan.core.analytics - WARNING - Analytics enabled but missing required config: base_url, api_key. Analytics will be disabled. Set analytics.enabled: false to suppress this warning, or provide the missing configuration in config.yaml. (__init__.py:79)

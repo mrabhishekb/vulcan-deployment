@@ -8,11 +8,11 @@ spec:
   compute: ct-sandbox
   engine: postgres
   repo:
-    url: https://github.com/mrabhishekb/vulcan-deployment
+    url: https://github.com/mrabhishekb/vulcan-deployment/
     syncFlags:
       - "--ref=main"
       - "--submodules=off"
-    baseDir: orders360
+    baseDir: vulcan-deployment/orders360
     secret: ct-sandbox:git-sync-mrab
   depots:
     - dataos://postgresdepot?purpose=rw
@@ -59,17 +59,6 @@ spec:
   api:
     replicas: 1
     logLevel: INFO
-    command:
-      - vulcan
-    arguments:
-      - -p
-      - orders360
-      - --log-to-stdout
-      - api
-      - --host
-      - "0.0.0.0"
-      - --port
-      - "8000"
     resource:
       request:
         cpu: "200m"
