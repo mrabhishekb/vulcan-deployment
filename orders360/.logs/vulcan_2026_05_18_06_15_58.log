@@ -1,0 +1,3 @@
+2026-05-18 06:15:59,509 - MainThread - vulcan.core.console - WARNING - Linter warnings for /workspace/models/seed_model.sql:
+ - Line 1: nomissingaudits - Model `assertions` must be configured to test data quality. (console.py:2353)
+2026-05-18 06:15:59,514 - MainThread - vulcan.core.config.connection - INFO - Creating new DuckDB adapter for in-memory database (connection.py:515)
