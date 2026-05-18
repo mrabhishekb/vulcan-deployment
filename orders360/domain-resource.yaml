@@ -25,6 +25,7 @@ spec:
       timezone: "US/Pacific"
       concurrencyPolicy: Forbid
     logLevel: INFO
+
     resource:
       request:
         cpu: "200m"
@@ -32,30 +33,22 @@ spec:
       limit:
         cpu: "1000m"
         memory: "1Gi"
-    migrate:
-      command:
-        - vulcan
-      arguments:
-        - -p
-        - orders360
-        - migrate
+
     plan:
       command:
         - vulcan
       arguments:
-        - -p
-        - orders360
         - --log-to-stdout
         - plan
         - --auto-apply
+
     run:
       command:
         - vulcan
       arguments:
-        - -p
-        - orders360
         - --log-to-stdout
         - run
+
   api:
     replicas: 1
     logLevel: INFO
@@ -64,6 +57,7 @@ spec:
         cpu: "200m"
         memory: "512Mi"
       limit:
-        cpu: "1000m"
-        memory: "1Gi"
+        cpu: "5000m"
+        memory: "4Gi"
+ 
  
